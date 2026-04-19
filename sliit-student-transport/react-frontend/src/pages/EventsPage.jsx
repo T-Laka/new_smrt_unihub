@@ -106,6 +106,7 @@ export default function EventsPage() {
           <div className="eventsx-toolbar-actions">
             <Link to="/" className="button button-small button-ghost">Back to Home</Link>
             <Link to="/create-event" className="button button-small button-primary">Create Event</Link>
+            <Link to="/my-event-bookings" className="button button-small button-secondary">My Tickets</Link>
             <Link to="/event-stalls/new" className="button button-small">Create Stall</Link>
             <Link to="/event-memories" className="button button-small button-ghost">Share Memory</Link>
             <Link to="/events-calendar" className="button button-small button-ghost">View Calendar</Link>
@@ -139,10 +140,20 @@ export default function EventsPage() {
                   <span>Start: {new Date(event.startDate).toLocaleString()}</span>
                   <span>End: {new Date(event.endDate).toLocaleString()}</span>
                 </div>
+                {String(event.eventType || '').toLowerCase() === 'indoor' && Number(event.ticketPrice || 0) > 0 ? (
+                  <div className="eventsx-meta">
+                    <span>Ticket: LKR {Number(event.ticketPrice)}</span>
+                  </div>
+                ) : null}
                 <div className="eventsx-actions">
                   <Link to={`/events/${event._id}`} className="button button-primary button-small">
                     View Details
                   </Link>
+                  {event.status === 'approved' && String(event.eventType || '').toLowerCase() === 'indoor' && Number(event.ticketPrice || 0) > 0 ? (
+                    <Link to={`/events/${event._id}/book`} className="button button-secondary button-small">
+                      Book
+                    </Link>
+                  ) : null}
                 </div>
               </article>
             ))}

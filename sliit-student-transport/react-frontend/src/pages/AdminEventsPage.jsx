@@ -1,18 +1,23 @@
 import { useEffect, useMemo, useState } from 'react';
 import PageHeader from '../components/PageHeader';
 import { apiRequest } from '../lib/api';
+import { readStoredUser } from '../lib/auth';
 import { deleteStall, getAdminStalls, updateStallStatus } from '../lib/eventCommunityApi';
 
 const statusOptions = ['all', 'pending', 'approved', 'rejected', 'completed', 'cancelled'];
 const stallStatusOptions = ['all', 'pending', 'approved', 'rejected'];
 
 export default function AdminEventsPage() {
+  const adminUser = useMemo(() => readStoredUser(), []);
   const [events, setEvents] = useState([]);
   const [stalls, setStalls] = useState([]);
+  const [bookings, setBookings] = useState([]);
   const [statusFilter, setStatusFilter] = useState('all');
   const [stallStatusFilter, setStallStatusFilter] = useState('all');
+  const [bookingFilter, setBookingFilter] = useState('pending');
   const [isLoading, setIsLoading] = useState(true);
   const [isStallLoading, setIsStallLoading] = useState(true);
+  const [isBookingLoading, setIsBookingLoading] = useState(true);
   const [error, setError] = useState('');
 
   const summary = useMemo(() => {
@@ -47,6 +52,22 @@ export default function AdminEventsPage() {
     [stalls]
   );
 
+  const bookingSummary = useMemo(() => {
+    return bookings.reduce(
+      (acc, booking) => {
+        acc.total += 1;
+        acc[booking.verificationStatus] = (acc[booking.verificationStatus] || 0) + 1;
+        return acc;
+      },
+      { total: 0, pending: 0, approved: 0, rejected: 0 }
+    );
+  }, [bookings]);
+
+  const pendingBookings = useMemo(
+    () => bookings.filter((booking) => booking.verificationStatus === 'pending'),
+    [bookings]
+  );
+
   const loadEvents = async () => {
     try {
       setIsLoading(true);
@@ -76,6 +97,21 @@ export default function AdminEventsPage() {
     }
   };
 
+  const loadBookings = async () => {
+    try {
+      setIsBookingLoading(true);
+      setError('');
+      const query = bookingFilter === 'all' ? '' : `?status=${bookingFilter}`;
+      const data = await apiRequest(`/api/admin/event-bookings${query}`);
+      setBookings(Array.isArray(data) ? data : []);
+    } catch (err) {
+      setError(err.message || 'Failed to load event bookings');
+      setBookings([]);
+    } finally {
+      setIsBookingLoading(false);
+    }
+  };
+
   useEffect(() => {
     loadEvents();
   }, [statusFilter]);
@@ -83,6 +119,10 @@ export default function AdminEventsPage() {
   useEffect(() => {
     loadStalls();
   }, [stallStatusFilter]);
+
+  useEffect(() => {
+    loadBookings();
+  }, [bookingFilter]);
 
   const changeStatus = async (eventId, status) => {
     try {
@@ -126,6 +166,26 @@ export default function AdminEventsPage() {
       await loadStalls();
     } catch (err) {
       setError(err.message || 'Failed to delete stall request');
+    }
+  };
+
+  const verifyBooking = async (bookingId, status) => {
+    try {
+      const note = status === 'rejected'
+        ? window.prompt('Optional rejection reason', '') || ''
+        : '';
+
+      await apiRequest(`/api/admin/event-bookings/${bookingId}/verify`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          status,
+          note,
+          adminId: adminUser?._id || adminUser?.id || 'admin',
+        }),
+      });
+      await loadBookings();
+    } catch (err) {
+      setError(err.message || 'Failed to verify booking payment');
     }
   };
 
@@ -244,6 +304,88 @@ export default function AdminEventsPage() {
                 ))}
               </div>
             )}
+          </article>
+
+          <article className="surface adminx-list-card">
+            <div className="adminx-list-head">
+              <h2>Event Payment Verification</h2>
+              <p>Verify user payments. Tickets are generated only after approval.</p>
+            </div>
+
+            <div className="adminx-chip-grid">
+              <div className="adminx-chip"><strong>{bookingSummary.total}</strong><span>Total Payments</span></div>
+              <div className="adminx-chip"><strong>{bookingSummary.pending}</strong><span>Pending</span></div>
+              <div className="adminx-chip"><strong>{bookingSummary.approved}</strong><span>Approved</span></div>
+              <div className="adminx-chip"><strong>{bookingSummary.rejected}</strong><span>Rejected</span></div>
+            </div>
+
+            <div className="adminx-action-row" style={{ justifyContent: 'space-between' }}>
+              <label>
+                <span>Payment Status Filter</span>
+                <select value={bookingFilter} onChange={(event) => setBookingFilter(event.target.value)}>
+                  <option value="all">ALL</option>
+                  <option value="pending">PENDING</option>
+                  <option value="approved">APPROVED</option>
+                  <option value="rejected">REJECTED</option>
+                </select>
+              </label>
+
+              <button type="button" className="button button-secondary" onClick={loadBookings}>
+                Refresh Payments
+              </button>
+            </div>
+
+            {isBookingLoading ? (
+              <p>Loading payment bookings...</p>
+            ) : bookings.length === 0 ? (
+              <p>No payment bookings found for selected filter.</p>
+            ) : (
+              <div className="adminx-cards-grid">
+                {bookings.map((booking) => (
+                  <article key={booking._id} className="adminx-offer-card">
+                    <div className="adminx-offer-top">
+                      <span>💳</span>
+                      <span className={`adminx-stock-pill ${booking.verificationStatus === 'approved' ? 'in' : 'out'}`}>
+                        {booking.verificationStatus}
+                      </span>
+                    </div>
+
+                    <h3>{booking.event?.title || 'Event'}</h3>
+                    <p>User: {booking.userName} ({booking.userEmail})</p>
+                    <small>Tickets: {booking.ticketCount}</small>
+                    <small>Amount: LKR {booking.payment?.amount || '-'}</small>
+                    <small>Payment Ref: {booking.payment?.reference || '-'}</small>
+                    {booking.payment?.cardLast4 ? <small>Card: ****{booking.payment.cardLast4}</small> : null}
+                    {booking.ticket?.ticketNumber ? <small>Ticket: {booking.ticket.ticketNumber}</small> : null}
+
+                    {booking.verificationStatus === 'pending' ? (
+                      <div className="adminx-action-row compact">
+                        <button
+                          type="button"
+                          className="button button-small button-primary"
+                          onClick={() => verifyBooking(booking._id, 'approved')}
+                        >
+                          Approve Payment
+                        </button>
+                        <button
+                          type="button"
+                          className="button button-small button-secondary"
+                          onClick={() => verifyBooking(booking._id, 'rejected')}
+                        >
+                          Reject Payment
+                        </button>
+                      </div>
+                    ) : null}
+                  </article>
+                ))}
+              </div>
+            )}
+
+            {pendingBookings.length > 0 ? (
+              <p style={{ marginTop: '0.75rem' }}>
+                Pending verifications right now: {pendingBookings.length}
+              </p>
+            ) : null}
           </article>
 
           <article className="surface adminx-list-card">

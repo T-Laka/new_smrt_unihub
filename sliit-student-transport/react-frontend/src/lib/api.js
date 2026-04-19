@@ -17,7 +17,10 @@ export async function apiRequest(path, options = {}) {
   const payload = contentType.includes('application/json') ? await response.json() : await response.text();
 
   if (!response.ok) {
-    const errorMessage = typeof payload === 'string' ? payload : payload.message || 'Request failed';
+    const errorMessage =
+      typeof payload === 'string'
+        ? payload
+        : payload.message || payload.error || `Request failed (${response.status})`;
     throw new Error(errorMessage);
   }
 

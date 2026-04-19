@@ -12,12 +12,23 @@ export default function CreateEventPage() {
     location: '',
     eventType: 'indoor',
     totalSeats: '',
+    ticketPrice: '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
 
   function handleChange(e) {
     const { name, value } = e.target;
+    if (name === 'eventType') {
+      setFormData(prev => ({
+        ...prev,
+        eventType: value,
+        totalSeats: value === 'indoor' ? prev.totalSeats : '',
+        ticketPrice: value === 'indoor' ? prev.ticketPrice : '',
+      }));
+      return;
+    }
+
     setFormData(prev => ({
       ...prev,
       [name]: value,
@@ -33,6 +44,7 @@ export default function CreateEventPage() {
       const eventData = {
         ...formData,
         totalSeats: formData.eventType === 'indoor' ? parseInt(formData.totalSeats) : undefined,
+        ticketPrice: formData.eventType === 'indoor' ? parseFloat(formData.ticketPrice) : undefined,
       };
 
       await apiRequest('/api/events', {
@@ -63,6 +75,7 @@ export default function CreateEventPage() {
             <div className="eventsx-stat-card"><strong>{formData.title ? 'Ready' : 'Draft'}</strong><span>Current State</span></div>
             <div className="eventsx-stat-card"><strong>{formData.eventType}</strong><span>Event Type</span></div>
             <div className="eventsx-stat-card"><strong>{formData.totalSeats || '-'}</strong><span>Seat Capacity</span></div>
+            <div className="eventsx-stat-card"><strong>{formData.eventType === 'indoor' ? `LKR ${formData.ticketPrice || '-'}` : 'N/A'}</strong><span>Ticket Price</span></div>
             <div className="eventsx-stat-card"><strong>{formData.location || 'TBD'}</strong><span>Location</span></div>
           </div>
         </article>
@@ -138,18 +151,34 @@ export default function CreateEventPage() {
             </label>
 
             {formData.eventType === 'indoor' ? (
-              <label>
-                <span>Total Seats *</span>
-                <input
-                  type="number"
-                  name="totalSeats"
-                  value={formData.totalSeats}
-                  onChange={handleChange}
-                  required
-                  min="1"
-                  placeholder="Number of seats"
-                />
-              </label>
+              <>
+                <label>
+                  <span>Total Seats *</span>
+                  <input
+                    type="number"
+                    name="totalSeats"
+                    value={formData.totalSeats}
+                    onChange={handleChange}
+                    required
+                    min="1"
+                    placeholder="Number of seats"
+                  />
+                </label>
+
+                <label>
+                  <span>Ticket Price (LKR) *</span>
+                  <input
+                    type="number"
+                    name="ticketPrice"
+                    value={formData.ticketPrice}
+                    onChange={handleChange}
+                    required
+                    min="1"
+                    step="1"
+                    placeholder="Ticket price for indoor event"
+                  />
+                </label>
+              </>
             ) : null}
 
             <div className="eventsx-actions">
@@ -184,6 +213,10 @@ export default function CreateEventPage() {
               <div className="eventsx-detail-card">
                 <h4>Status on Submit</h4>
                 <p>Pending Approval</p>
+              </div>
+              <div className="eventsx-detail-card">
+                <h4>Ticket Price</h4>
+                <p>{formData.eventType === 'indoor' ? `LKR ${formData.ticketPrice || '-'}` : 'N/A for outdoor events'}</p>
               </div>
             </div>
           </aside>

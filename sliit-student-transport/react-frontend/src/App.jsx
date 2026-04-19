@@ -16,10 +16,12 @@ import AdminEventsPage from './pages/AdminEventsPage';
 import TrackRidePage from './pages/TrackRidePage';
 import EventsPage from './pages/EventsPage';
 import EventDetailsPage from './pages/EventDetailsPage';
+import EventBookingPage from './pages/EventBookingPage';
 import CreateEventPage from './pages/CreateEventPage';
 import EventStallRequestPage from './pages/EventStallRequestPage';
 import EventMemoriesPage from './pages/EventMemoriesPage';
 import EventsCalendarPage from './pages/EventsCalendarPage';
+import MyEventBookingsPage from './pages/MyEventBookingsPage';
 import DashboardTestPage from './pages/DashboardTestPage';
 import StudyAreaPage from './pages/StudyAreaPage';
 import StudentFinesPage from './pages/StudentFinesPage';
@@ -86,10 +88,12 @@ export default function App() {
             <Route path="/track-ride" element={<TrackRidePage />} />
             <Route path="/events" element={<EventsPage />} />
             <Route path="/events/:id" element={<EventDetailsPage />} />
+            <Route path="/events/:id/book" element={<EventBookingPage />} />
             <Route path="/create-event" element={<CreateEventPage />} />
             <Route path="/event-stalls/new" element={<EventStallRequestPage />} />
             <Route path="/event-memories" element={<EventMemoriesPage />} />
             <Route path="/events-calendar" element={<EventsCalendarPage />} />
+            <Route path="/my-event-bookings" element={<MyEventBookingsPage />} />
             <Route path="/canteen" element={<CanteenPage />} />
             <Route path="/canteen-offers" element={<CanteenOffersPage />} />
             <Route path="/canteen-food-stock" element={<CanteenFoodStockPage />} />

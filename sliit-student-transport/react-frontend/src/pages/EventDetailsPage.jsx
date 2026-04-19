@@ -12,6 +12,12 @@ export default function EventDetailsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
 
+  const canBook =
+    event &&
+    event.status === 'approved' &&
+    String(event.eventType || '').toLowerCase() === 'indoor' &&
+    Number(event.ticketPrice || 0) > 0;
+
   useEffect(() => {
     let isMounted = true;
 
@@ -138,6 +144,12 @@ export default function EventDetailsPage() {
                 <p>{event.totalSeats} seats</p>
               </div>
             ) : null}
+            {String(event.eventType || '').toLowerCase() === 'indoor' && Number(event.ticketPrice || 0) > 0 ? (
+              <div className="eventsx-detail-card">
+                <h3>Ticket Price</h3>
+                <p>LKR {Number(event.ticketPrice)}</p>
+              </div>
+            ) : null}
           </div>
 
           {communityError ? <p className="text-danger">{communityError}</p> : null}
@@ -192,6 +204,14 @@ export default function EventDetailsPage() {
           <div className="eventsx-actions">
             <Link to="/events" className="button button-primary button-small">
               Browse Other Events
+            </Link>
+            {canBook ? (
+              <Link to={`/events/${event._id}/book`} className="button button-secondary button-small">
+                Book
+              </Link>
+            ) : null}
+            <Link to="/my-event-bookings" className="button button-ghost button-small">
+              My Tickets
             </Link>
             <Link to="/event-memories" className="button button-ghost button-small">
               Share Memory
