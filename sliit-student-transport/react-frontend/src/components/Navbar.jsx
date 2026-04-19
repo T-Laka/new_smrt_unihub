@@ -5,8 +5,14 @@ import { clearAuthenticatedUser, readStoredUser } from '../lib/auth';
 const navLinks = [
   { to: '/', label: 'Home' },
   { to: '/find-ride', label: 'Find Ride' },
-  { to: '/events', label: 'Events' },
-  { to: '/events-calendar', label: 'Calendar' },
+  { 
+    to: '/events', 
+    label: 'Events',
+    submenu: [
+      { to: '/events', label: 'Events List' },
+      { to: '/events-calendar', label: 'Calendar' }
+    ]
+  },
   { to: '/canteen', label: 'Canteen' },
   { to: '/study-area', label: 'Study Area' },
   { to: '/student-fines', label: 'My Fines' },
@@ -62,10 +68,22 @@ export default function Navbar() {
         <div className={`nav-panel ${menuOpen ? 'open' : ''}`}>
           <ul className="nav-links">
             {navLinks.map((link) => (
-              <li key={link.to}>
+              <li key={link.to} className={link.submenu ? 'nav-item-dropdown' : ''}>
                 <NavLink to={link.to} end={link.to === '/'}>
                   {link.label}
+                  {link.submenu && <span className="dropdown-caret">▼</span>}
                 </NavLink>
+                {link.submenu && (
+                  <ul className="nav-submenu">
+                    {link.submenu.map((sublink) => (
+                      <li key={sublink.to}>
+                        <NavLink to={sublink.to} end={sublink.to === '/events'}>
+                          {sublink.label}
+                        </NavLink>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </li>
             ))}
           </ul>
